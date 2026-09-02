@@ -1230,19 +1230,24 @@
     background: #fff; border: 2px solid var(--border-col); }
   .npc-talk:hover { border-color: var(--accent-amber); background: #FFF8E8; }
 
-  /* ---- 대화창 ---- */
-  .dlg-bg { position: fixed; inset: 0; z-index: 90; background: rgba(40,32,20,.42);
-    display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
+  /* ---- 대화창 (컷신) ---- */
+  .dlg-bg { position: fixed; inset: 0; z-index: 90; background: rgba(40,32,20,.5);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    align-items: center; padding: 16px; }
+  .dlg-stage { flex: 1; width: 100%; max-width: 640px; display: flex;
+    align-items: flex-end; justify-content: center; pointer-events: none;
+    min-height: 0; overflow: hidden; }
+  .dlg-big { width: min(64vw, 300px); height: 100%; max-height: 46vh;
+    display: flex; align-items: flex-end; justify-content: center;
+    animation: dlgRise .22s ease-out; }
+  .dlg-big svg, .dlg-big img { width: 100%; height: 100%; object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(40,32,20,.35)); }
+  @keyframes dlgRise { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
   .dlg-box { width: 100%; max-width: 640px; cursor: pointer; display: flex; gap: 12px;
-    padding: 14px 16px; border-radius: 18px; background: var(--bg-panel);
+    margin-top: 10px; padding: 14px 16px; border-radius: 18px; background: var(--bg-panel);
     border: 3px solid var(--border-strong); box-shadow: 0 8px 0 rgba(0,0,0,.12);
     animation: dlgUp .18s ease-out; }
   @keyframes dlgUp { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
-  .dlg-portrait { width: 92px; height: 92px; flex: none; align-self: flex-end;
-    border-radius: 14px; background: var(--bg-panel-light);
-    border: 2px solid var(--border-col); overflow: hidden; }
-  .dlg-portrait-svg { width: 100%; height: 100%; }
-  .npc-face img { width: 100%; height: 100%; object-fit: contain; }
   .dlg-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .dlg-name { font-family: var(--font-head); font-weight: 700; font-size: 16px;
     color: var(--accent-purple-dark); margin-bottom: 4px; }
@@ -1254,11 +1259,17 @@
   .dlg-next { cursor: pointer; font-family: var(--font-head); font-weight: 700; font-size: 14px;
     color: #fff; padding: 6px 16px; border-radius: 999px; border: none;
     background: var(--accent-amber); border-bottom: 3px solid var(--accent-amber-dark); }
+  .dlg-portrait-svg { width: 100%; height: 100%; }
   @media (max-width: 520px) {
-    .dlg-portrait { width: 66px; height: 66px; }
+    .dlg-bg { padding: 10px; }
+    .dlg-big { width: min(78vw, 260px); max-height: 40vh; }
     .dlg-text { font-size: 14px; }
-    .npc-talk { padding: 6px 9px; }
   }
+  @media (max-height: 560px) {
+    .dlg-big { max-height: 34vh; }
+    .dlg-text { min-height: 44px; }
+  }
+
   .dye-row { margin-top: 10px; padding: 10px 12px; border: 2px solid var(--border-col);
     border-radius: 14px; background: #FFFDF7; }
   .dye-title { font-family: var(--font-head); font-weight: 700; font-size: 15px; margin-bottom: 8px; }
@@ -4654,17 +4665,31 @@ const WEATHERS = [
   { id: 'rainbow', name: '무지개', icon: '🌈',  desc: '모든 능력치 획득이 1.5배!',      growth: 2.5, coinMul: 1.5, statMul: 1.5, weight: 4 },
 ];
 
-const SEASON_LEN = 180;  // 초
-const WEATHER_LEN = 50;  // 초
+// 계절과 날씨는 실제 시간을 따라가요. 게임을 꺼둬도 흘러가고,
+// 같은 시각이면 누구에게나 같은 계절·날씨가 보여요.
+const SEASON_LEN_MS = 7 * 86400000;    // 계절 하나가 실제 일주일
+const WEATHER_LEN_MS = 3 * 3600000;    // 날씨는 3시간마다
 
-function currentSeason() { return SEASONS[state.seasonIdx % SEASONS.length] || SEASONS[0]; }
-function currentWeather() { return WEATHERS.find(w => w.id === state.weatherId) || WEATHERS[0]; }
-function cropGrowthMul() {
-  return currentSeason().growth * currentWeather().growth
-    * (1 + decorBonus().crop + zooSpecBonus().crop + researchLevel('growth') * 0.06);
+// 계절 경계를 월요일 0시에 맞춰요 (1970-01-01 이 목요일이라 4일 밀어요)
+function seasonIndexNow() {
+  return Math.floor((Date.now() - 4 * 86400000) / SEASON_LEN_MS) % SEASONS.length;
+}
+function seasonEndsInMs() {
+  const n = Math.floor((Date.now() - 4 * 86400000) / SEASON_LEN_MS) + 1;
+  return n * SEASON_LEN_MS + 4 * 86400000 - Date.now();
+}
+function currentSeason() { return SEASONS[seasonIndexNow()] || SEASONS[0]; }
+
+function weatherBucket() { return Math.floor(Date.now() / WEATHER_LEN_MS); }
+function weatherEndsInMs() { return (weatherBucket() + 1) * WEATHER_LEN_MS - Date.now(); }
+
+// 같은 시간대면 늘 같은 값이 나오도록 씨앗을 고정해요
+function seededRand(n) {
+  const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
 }
 
-function rollWeather() {
+function weatherIdNow() {
   const season = currentSeason();
   const pool = WEATHERS.map(w => {
     let weight = w.weight;
@@ -4676,10 +4701,17 @@ function rollWeather() {
     if (season.id === 'autumn' && w.id === 'cloudy') weight *= 1.5;
     return { id: w.id, weight };
   });
-  const total = pool.reduce((s, w) => s + w.weight, 0);
-  let r = Math.random() * total;
+  const total = pool.reduce((sum, w) => sum + w.weight, 0);
+  let r = seededRand(weatherBucket()) * total;
   for (const w of pool) { r -= w.weight; if (r <= 0) return w.id; }
   return 'cloudy';
+}
+
+function currentWeather() { return WEATHERS.find(w => w.id === weatherIdNow()) || WEATHERS[0]; }
+
+function cropGrowthMul() {
+  return currentSeason().growth * currentWeather().growth
+    * (1 + decorBonus().crop + zooSpecBonus().crop + researchLevel('growth') * 0.06);
 }
 
 // ===================== DATA: TRAITS (성격) =====================
@@ -5046,9 +5078,7 @@ let state = {
   farmLayout: {},
   // --- v3: 계절/날씨 ---
   seasonIdx: 0,
-  seasonSec: 0,
   weatherId: 'sunny',
-  weatherSec: 0,
   seenSeasons: [],
   // --- v3: 텃밭 ---
   plotCount: PLOT_START,
@@ -5147,9 +5177,7 @@ function loadGame() {
       if (!state.farmLayout) state.farmLayout = {};
       // --- v3 migration ---
       if (typeof state.seasonIdx !== 'number') state.seasonIdx = 0;
-      if (typeof state.seasonSec !== 'number') state.seasonSec = 0;
       if (!state.weatherId) state.weatherId = 'sunny';
-      if (typeof state.weatherSec !== 'number') state.weatherSec = 0;
       if (!Array.isArray(state.seenSeasons)) state.seenSeasons = [];
       if (typeof state.plotCount !== 'number') state.plotCount = PLOT_START;
       if (!Array.isArray(state.plots)) state.plots = [];
@@ -6017,8 +6045,8 @@ function startDialogue(lines, onEnd) {
 
   root.innerHTML = `
     <div class="dlg-bg" id="dlgBg">
+      <div class="dlg-stage" id="dlgStage"></div>
       <div class="dlg-box" id="dlgBox">
-        <div class="dlg-portrait" id="dlgPortrait"></div>
         <div class="dlg-main">
           <div class="dlg-name" id="dlgName"></div>
           <div class="dlg-text" id="dlgText"></div>
@@ -6041,15 +6069,17 @@ function showDialogueLine() {
   const line = dlg.lines[dlg.idx];
   if (!line) { endDialogue(); return; }
 
-  const portrait = document.getElementById('dlgPortrait');
+  const stage = document.getElementById('dlgStage');
   const nameEl = document.getElementById('dlgName');
   const textEl = document.getElementById('dlgText');
   const pageEl = document.getElementById('dlgPage');
   if (!textEl) return;
 
   const art = line.art || line.species;
-  portrait.innerHTML = portraitSvg(art);
-  portrait.style.display = art ? '' : 'none';
+  if (stage.dataset.art !== (art || '')) {
+    stage.dataset.art = art || '';
+    stage.innerHTML = art ? `<div class="dlg-big">${portraitSvg(art)}</div>` : '';
+  }
   nameEl.innerHTML = line.name
     ? `${escapeHtml(line.name)}${line.role ? `<span class="dlg-role">${escapeHtml(line.role)}</span>` : ''}`
     : '';
@@ -6172,14 +6202,18 @@ function openNicknameOnboard(onDone) {
   root.innerHTML = `
     <div class="hatch-modal-bg">
       <div class="hatch-modal cloud-modal">
-        <div class="hatch-title" style="margin-bottom:10px;">🏷️ 사육사님, 어떻게 부르면 될까요?</div>
+        <div class="hatch-title" style="margin-bottom:10px;">📋 사육사 명부</div>
         <div class="cloud-body">
-          <div class="cloud-note">동물들과 마을 사람들이 이렇게 부를 거예요.
+          <div class="cloud-note">이름은 동물들과 마을 사람들이 부르는 말이에요.
             나중에 ☁️ 버튼에서 바꿀 수 있어요.</div>
           <input class="code-input" id="onboardNick" maxlength="12"
                  placeholder="이름을 적어주세요 (12자까지)" autocomplete="off">
           <div class="cloud-note" style="margin-top:10px;">마을 어른들이 부를 호칭도 골라주세요.</div>
           <div class="dye-chips" id="onboardCalls"></div>
+          <div class="cloud-note" style="margin-top:12px;">태어난 연도예요.
+            이 기기에만 적어두고 어디로도 보내지 않아요.</div>
+          <input class="code-input" id="onboardYear" type="number" inputmode="numeric"
+                 placeholder="태어난 연도 (예: 2011)" autocomplete="off">
           <div class="cloud-note" id="onboardNickMsg"></div>
         </div>
         <button class="game-btn amber" id="onboardNickOk" style="margin-top:12px;">이걸로 할게요</button>
@@ -6201,20 +6235,32 @@ function openNicknameOnboard(onDone) {
   paint();
 
   const input = document.getElementById('onboardNick');
+  const yearInput = document.getElementById('onboardYear');
   const msg = document.getElementById('onboardNickMsg');
   input.value = state.nickname || '';
+  if (state.birthYear) yearInput.value = state.birthYear;
+
   const finish = () => {
     const v = input.value.trim().slice(0, 12);
     if (!v) { msg.textContent = '이름을 적어주세요.'; input.focus(); return; }
+    const y = parseInt(yearInput.value, 10);
+    const thisYear = new Date().getFullYear();
+    if (!y || y < 1900 || y > thisYear) {
+      msg.textContent = '태어난 연도를 다시 확인해주세요.';
+      yearInput.focus();
+      return;
+    }
     state.nickname = v;
     state.call = pick;
+    state.birthYear = y;
     sfxClick();
     saveGame();
     root.innerHTML = '';
     if (onDone) onDone();
   };
   document.getElementById('onboardNickOk').onclick = finish;
-  input.onkeydown = e => { if (e.key === 'Enter') finish(); };
+  input.onkeydown = e => { if (e.key === 'Enter') yearInput.focus(); };
+  yearInput.onkeydown = e => { if (e.key === 'Enter') finish(); };
   setTimeout(() => input.focus(), 80);
 }
 
@@ -6241,6 +6287,8 @@ function openIntroModal(fromButton) {
       text: '한 마리씩, 천천히 돌봐주게. 다들 집으로 돌아갈 수 있도록.' },
     { name: moka.name, role: moka.role, art: moka.art,
       text: '아 참, 통 물어보지도 않았구먼. 자네를 뭐라고 부르면 되겠나?' },
+    { name: moka.name, role: moka.role, art: moka.art,
+      text: '나이도 좀 알려주게. 왕국 규칙이라 사육사 명부에 적어둬야 하거든.' },
   ];
 
   startDialogue(script, () => {
@@ -6260,7 +6308,7 @@ function openIntroModal(fromButton) {
     };
 
     // 이름을 아직 안 정했으면 여기서 물어봐요
-    if (!state.nickname) setTimeout(() => openNicknameOnboard(after), 220);
+    if (!state.nickname || !ageVerified()) setTimeout(() => openNicknameOnboard(after), 220);
     else after();
   });
 }
@@ -8186,27 +8234,33 @@ function resolveEvent(ev, choice) {
 
 // ===================== SYSTEM: 계절 & 날씨 =====================
 
-function tickClimate(sec) {
-  state.weatherSec += sec;
-  if (state.weatherSec >= WEATHER_LEN) {
-    state.weatherSec = 0;
-    const prev = state.weatherId;
-    state.weatherId = rollWeather();
-    if (state.weatherId !== prev) {
-      const w = currentWeather();
-      addLog(`${w.icon} 날씨가 ${J(w.name, '으로')} 바뀌었어요. ${w.desc}`);
-    }
+function tickClimate() {
+  // 계절과 날씨는 실제 시간을 보므로, 바뀌었을 때 알려주기만 하면 돼요
+  const wid = weatherIdNow();
+  if (state.weatherId !== wid) {
+    state.weatherId = wid;
+    const w = currentWeather();
+    addLog(`${w.icon} 날씨가 ${J(w.name, '으로')} 바뀌었어요. ${w.desc}`);
   }
-
-  state.seasonSec += sec;
-  if (state.seasonSec >= SEASON_LEN) {
-    state.seasonSec = 0;
-    state.seasonIdx = (state.seasonIdx + 1) % SEASONS.length;
-    const s = currentSeason();
-    if (!state.seenSeasons.includes(s.id)) state.seenSeasons.push(s.id);
-    addLog(`${s.icon} ${J(s.name, '이가')} 찾아왔어요! ${s.desc}`);
+  const sid = seasonIndexNow();
+  if (state.seasonIdx !== sid) {
+    state.seasonIdx = sid;
+    const sn = currentSeason();
+    if (!state.seenSeasons.includes(sn.id)) state.seenSeasons.push(sn.id);
+    addLog(`${sn.icon} ${J(sn.name, '이가')} 찾아왔어요! ${sn.desc}`);
     checkAchievements();
   }
+}
+
+// 남은 시간을 '3일 4시간' 처럼 보여줘요
+function fmtLeft(ms) {
+  const t = Math.max(0, Math.floor(ms / 1000));
+  const d = Math.floor(t / 86400);
+  const h = Math.floor((t % 86400) / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  if (d) return h ? `${d}일 ${h}시간` : `${d}일`;
+  if (h) return m ? `${h}시간 ${m}분` : `${h}시간`;
+  return `${Math.max(1, m)}분`;
 }
 
 function renderClimate() {
@@ -8221,7 +8275,7 @@ function renderClimate() {
       <div class="cb-name">${s.icon} ${s.name} · ${w.name}</div>
       <div class="cb-desc">${s.icon} ${s.desc} &nbsp;·&nbsp; ${w.icon} ${w.desc}</div>
     </div>
-    <div class="cb-timer">다음 계절까지 ${Math.max(0, SEASON_LEN - Math.floor(state.seasonSec))}초</div>
+    <div class="cb-timer">다음 계절까지 ${fmtLeft(seasonEndsInMs())}<br>날씨 바뀜 ${fmtLeft(weatherEndsInMs())} 뒤</div>
   `;
   ['climateBanner', 'farmClimateBanner'].forEach(id => {
     const el = document.getElementById(id);
@@ -9083,7 +9137,7 @@ function applyOfflineProgress() {
       const arrived = state.animals.filter(a => isAway(a) && expedRemaining(a) === 0).length;
       if (arrived > 0) lines.push(`🗺️ 원정 간 동물 ${arrived}마리가 돌아와서 기다리고 있어요`);
 
-      tickClimate(Math.min(elapsed, SEASON_LEN));
+      tickClimate();   // 실제 시간을 보므로 인자가 필요 없어요
     }
   }
 
@@ -9098,7 +9152,7 @@ function applyOfflineProgress() {
 }
 
 function tickSecond() {
-  tickClimate(1);
+  tickClimate();
   tickFarm(1);
   renderClimate();
   updateExpedTimers();
@@ -11015,6 +11069,27 @@ function init() {
   // 처음 온 사육사에게, 그리고 이야기가 바뀌었을 때 들려줘요
   if (state.introVer < INTRO_VERSION) {
     setTimeout(() => openIntroModal(false), 400);
+  } else if (!state.nickname || !ageVerified()) {
+    // 이야기는 이미 봤지만 이름·연도가 비어 있는 경우.
+    // 폼만 덜렁 띄우면 뜬금없으니 모카 할아버지가 먼저 말을 걸어요.
+    setTimeout(() => {
+      const moka = NPCS.find(n => n.id === 'moka');
+      startDialogue([
+        { name: moka.name, role: moka.role, art: moka.art,
+          text: '아 참, 통 물어보지도 않았구먼. 자네를 뭐라고 부르면 되겠나?' },
+        { name: moka.name, role: moka.role, art: moka.art,
+          text: '나이도 좀 알려주게. 왕국 규칙이라 사육사 명부에 적어둬야 하거든.' },
+      ], () => {
+        openNicknameOnboard(() => {
+          const who = escapeHtml(state.nickname || '사육사');
+          const c = callById(state.call);
+          startDialogue([
+            { name: moka.name, role: moka.role, art: moka.art,
+              text: `<b>${who}</b>${josa(who, '이가')}라... 좋은 이름이구먼. 그럼 ${c.old}이라고 부르겠네.` },
+          ], () => setTimeout(checkDailyBonus, 400));
+        });
+      });
+    }, 500);
   } else {
     setTimeout(checkDailyBonus, 600);
   }
