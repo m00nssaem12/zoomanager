@@ -1104,6 +1104,158 @@
     opacity: 0.5;
   }
 
+  /* ===== Minigame polish: confetti / shake / glow ===== */
+  @keyframes confetti-fall {
+    0%   { transform: translateY(-10px) rotate(0deg) scale(1);   opacity: 1; }
+    100% { transform: translateY(140px) rotate(360deg) scale(0.8); opacity: 0; }
+  }
+  .confetti-piece {
+    position: absolute;
+    top: 0;
+    font-size: 20px;
+    pointer-events: none;
+    animation: confetti-fall 900ms ease-in forwards;
+    z-index: 30;
+  }
+  @keyframes mg-shake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-8px); }
+    40%, 60% { transform: translateX(8px); }
+  }
+  .mg-shake { animation: mg-shake 0.4s; }
+  @keyframes mg-pop {
+    0% { transform: scale(0.7); opacity: 0; }
+    60% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+  .mg-pop { animation: mg-pop 0.3s ease-out; }
+  @keyframes mg-glow-pulse {
+    0%, 100% { box-shadow: 0 0 0 rgba(255,193,74,0); }
+    50% { box-shadow: 0 0 18px 4px rgba(255,193,74,0.55); }
+  }
+  .mg-glow { animation: mg-glow-pulse 0.7s ease-in-out; }
+  .mg-streak-badge {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--accent-amber);
+    color: #fff;
+    font-weight: 800;
+    font-size: 13px;
+    animation: mg-pop 0.3s ease-out;
+  }
+
+  /* 3D flip cards for memory match */
+  .memory-card { perspective: 700px; background: transparent !important; border: none !important; }
+  .memory-card-inner {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.4s cubic-bezier(.4,.2,.2,1);
+    transform-style: preserve-3d;
+  }
+  .memory-card.flipped .memory-card-inner,
+  .memory-card.matched .memory-card-inner { transform: rotateY(180deg); }
+  .memory-card-face {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; border: 2px solid var(--border-col);
+    backface-visibility: hidden;
+  }
+  .memory-card-back { background: var(--bg-panel-light); font-size: 20px; color: var(--text-dim); }
+  .memory-card-front { background: var(--bg-panel); border-color: var(--accent-blue); font-size: 28px; transform: rotateY(180deg); }
+  .memory-card.matched .memory-card-front { background: #EAFBF1; border-color: var(--accent-green); }
+  .memory-combo-badge { color: var(--accent-green-dark); font-weight: 800; font-size: 13px; margin-left: 6px; }
+
+  /* Shadow match minigame */
+  .shadow-stage { text-align: center; padding: 14px 0 4px; }
+  .shadow-emoji {
+    font-size: 92px; line-height: 1;
+    filter: brightness(0);
+    transition: filter 0.4s ease-out;
+    display: inline-block;
+  }
+  .shadow-emoji.revealed { filter: none; }
+  .shadow-progress { font-size: 14px; color: var(--text-dim); font-weight: 700; margin-bottom: 4px; }
+  .shadow-choices {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    max-width: 360px; margin: 16px auto 6px;
+  }
+  .shadow-choice-btn {
+    padding: 12px 8px; border-radius: 10px; border: 2px solid var(--border-col);
+    background: var(--bg-panel-light); font-weight: 700; font-size: 15px;
+    cursor: pointer; color: var(--text-main);
+  }
+  .shadow-choice-btn:hover { border-color: var(--accent-blue); }
+  .shadow-choice-btn:disabled { cursor: default; }
+  .shadow-choice-btn.correct { background: #EAFBF1; border-color: var(--accent-green); }
+  .shadow-choice-btn.wrong { background: #FDECEC; border-color: var(--accent-red); }
+  .shadow-fact { font-size: 13px; color: var(--text-dim); margin-top: 10px; min-height: 34px; }
+  .shadow-streak { font-size: 14px; font-weight: 700; color: var(--accent-amber-dark); }
+
+  /* Catch basket game */
+  .catch-game-area {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    height: 380px;
+    margin: 12px auto;
+    border-radius: 14px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #CDEBFF 0%, #EAF7FF 70%, #F3E9D8 100%);
+    border: 2px solid var(--border-col);
+    touch-action: none;
+    cursor: grab;
+  }
+  .catch-basket {
+    position: absolute;
+    bottom: 8px;
+    width: 58px;
+    height: 44px;
+    font-size: 42px;
+    line-height: 44px;
+    text-align: center;
+    transform: translateX(-50%);
+    transition: left 0.06s linear;
+    pointer-events: none;
+    user-select: none;
+    filter: drop-shadow(0 3px 2px rgba(0,0,0,0.2));
+  }
+  .catch-item {
+    position: absolute;
+    font-size: 30px;
+    line-height: 1;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    user-select: none;
+  }
+  .catch-hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 380px;
+    margin: 0 auto 4px;
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--text-main);
+  }
+  .catch-hearts { color: var(--accent-red); letter-spacing: 2px; }
+  .catch-score { color: var(--accent-amber-dark); }
+  .catch-timer { color: var(--text-dim); font-size: 13px; font-weight: 700; }
+  .catch-hint { text-align: center; font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+  @keyframes catch-pop-text {
+    0% { transform: translate(-50%, -50%) scale(0.6); opacity: 1; }
+    100% { transform: translate(-50%, -140%) scale(1.1); opacity: 0; }
+  }
+  .catch-pop {
+    position: absolute;
+    font-weight: 800;
+    font-size: 16px;
+    pointer-events: none;
+    animation: catch-pop-text 0.6s ease-out forwards;
+    z-index: 10;
+  }
+
   /* Event modal */
   .event-modal .hatch-emoji { font-size: 56px; }
   .event-choices {
@@ -6190,11 +6342,9 @@ function renderNpcBars() {
 
 // 오프닝이 끝나면 사육사 이름과 호칭을 물어봐요
 const CALLS = [
-  { id: 'girl',    label: '아가씨', old: '아가씨', young: '아가씨' },
-  { id: 'boy',     label: '총각',   old: '총각',   young: '총각' },
-  { id: 'neutral', label: '그냥 사육사님', old: '자네', young: '사육사님' },
+  { id: 'neutral', label: '사육사님', old: '사육사님', young: '사육사님' },
 ];
-function callById(id) { return CALLS.find(c => c.id === id) || CALLS[2]; }
+function callById(id) { return CALLS.find(c => c.id === id) || CALLS[0]; }
 
 function openNicknameOnboard(onDone) {
   const root = document.getElementById('hatchModalRoot');
@@ -6208,9 +6358,7 @@ function openNicknameOnboard(onDone) {
             나중에 ☁️ 버튼에서 바꿀 수 있어요.</div>
           <input class="code-input" id="onboardNick" maxlength="12"
                  placeholder="이름을 적어주세요 (12자까지)" autocomplete="off">
-          <div class="cloud-note" style="margin-top:10px;">마을 어른들이 부를 호칭도 골라주세요.</div>
-          <div class="dye-chips" id="onboardCalls"></div>
-          <div class="cloud-note" style="margin-top:12px;">태어난 연도예요.
+          <div class="cloud-note" style="margin-top:10px;">태어난 연도예요.
             이 기기에만 적어두고 어디로도 보내지 않아요.</div>
           <input class="code-input" id="onboardYear" type="number" inputmode="numeric"
                  placeholder="태어난 연도 (예: 2011)" autocomplete="off">
@@ -6220,19 +6368,7 @@ function openNicknameOnboard(onDone) {
       </div>
     </div>
   `;
-  let pick = state.call || 'neutral';
-  const chips = document.getElementById('onboardCalls');
-  const paint = () => {
-    chips.innerHTML = '';
-    CALLS.forEach(c => {
-      const b = document.createElement('button');
-      b.className = 'dye-chip' + (pick === c.id ? ' on' : '');
-      b.textContent = c.label;
-      b.onclick = () => { pick = c.id; sfxClick(); paint(); };
-      chips.appendChild(b);
-    });
-  };
-  paint();
+  const pick = 'neutral';
 
   const input = document.getElementById('onboardNick');
   const yearInput = document.getElementById('onboardYear');
@@ -7643,11 +7779,37 @@ function renderLog() {
 // ===================== MINIGAME HUB =====================
 
 const MINIGAME_DEFS = [
+  { id: 'catch_game', name: '먹이 바구니 받기', icon: '🧺', desc: '바구니를 움직여서 떨어지는 먹이를 받고 위험한 건 피해보세요' },
   { id: 'feed_toss', name: '먹이 던지기', icon: '🎯', desc: '타이밍에 맞춰 클릭해서 먹이를 정확히 던져보세요' },
   { id: 'memory_match', name: '동물 카드 맞추기', icon: '🃏', desc: '같은 동물 카드를 짝지어서 모두 맞춰보세요' },
   { id: 'roulette', name: '행운의 룰렛', icon: '🎰', desc: '하루 1번 무료로 돌려서 보상을 받아보세요' },
   { id: 'element_battle', name: '속성 대결', icon: '⚔️', desc: '내 동물의 속성으로 상대와 대결해보세요' },
+  { id: 'shadow_match', name: '그림자 맞추기', icon: '🌑', desc: '실루엣만 보고 어떤 동물인지 맞혀보세요' },
 ];
+
+// 여러 미니게임에서 함께 쓰는 연출 효과예요
+function burstConfetti(container, emojis) {
+  if (!container) return;
+  const pool = emojis || ['🎉', '✨', '⭐', '🎊'];
+  const cs = getComputedStyle(container);
+  if (cs.position === 'static') container.style.position = 'relative';
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.textContent = pool[Math.floor(Math.random() * pool.length)];
+    p.style.left = (Math.random() * 90 + 5) + '%';
+    p.style.animationDelay = Math.round(Math.random() * 150) + 'ms';
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 1200);
+  }
+}
+
+function mgShake(el) {
+  if (!el) return;
+  el.classList.remove('mg-shake');
+  void el.offsetWidth; // reflow to restart animation
+  el.classList.add('mg-shake');
+}
 
 const MAX_PLAYS_PER_DAY = 3;
 
@@ -7707,6 +7869,8 @@ function renderMinigameHub() {
         else if (g.id === 'memory_match') startMemoryGame();
         else if (g.id === 'roulette') startRouletteGame();
         else if (g.id === 'element_battle') startElementBattleGame();
+        else if (g.id === 'shadow_match') startShadowMatchGame();
+        else if (g.id === 'catch_game') startCatchGame();
       };
     } else {
       div.style.opacity = '0.5';
@@ -7743,6 +7907,7 @@ function startFeedTossGame() {
   let direction = 1;
   let speed = 2.2;
   let rafId = null;
+  let perfectStreak = 0;
 
   function renderShell() {
     panel.innerHTML = `
@@ -7800,23 +7965,30 @@ function startFeedTossGame() {
     renderAttemptDots();
 
     const resultText = document.getElementById('feedResultText');
+    const track = document.getElementById('feedTrack');
     if (result === 'perfect') {
-      totalReward.coin += 15;
+      perfectStreak += 1;
+      const bonus = perfectStreak >= 2 ? Math.round(15 * (perfectStreak - 1) * 0.3) : 0;
+      totalReward.coin += 15 + bonus;
       totalReward.food += 10;
-      resultText.textContent = '🎯 퍼펙트!';
+      resultText.innerHTML = '🎯 퍼펙트!' + (perfectStreak >= 2 ? `<div class="mg-streak-badge">🔥 ${perfectStreak}연속! 보너스 +${bonus}</div>` : '');
       resultText.style.color = 'var(--accent-green)';
       state.feedPerfectCount = (state.feedPerfectCount || 0) + 1;
       sfxCorrect();
+      burstConfetti(track);
     } else if (result === 'good') {
+      perfectStreak = 0;
       totalReward.coin += 7;
       totalReward.food += 4;
       resultText.textContent = '👍 굿!';
       resultText.style.color = 'var(--accent-amber)';
       sfxClick();
     } else {
+      perfectStreak = 0;
       resultText.textContent = '😅 아쉬워요';
       resultText.style.color = 'var(--accent-red)';
       sfxWrong();
+      mgShake(track);
     }
 
     checkAchievements();
@@ -7855,6 +8027,8 @@ function startMemoryGame() {
   let mistakes = 0;
   let matchedPairs = 0;
   let lockBoard = false;
+  let combo = 0;
+  let bestCombo = 0;
 
   function render() {
     panel.innerHTML = `
@@ -7862,6 +8036,7 @@ function startMemoryGame() {
       <div class="memory-stats">
         <div>실수: <span id="mistakeCount">${mistakes}</span></div>
         <div>남은 짝: <span id="pairsLeft">${emojiPool.length - matchedPairs}</span></div>
+        ${combo >= 2 ? `<div class="memory-combo-badge">🔥 ${combo}연속 콤보</div>` : ''}
       </div>
       <div class="memory-grid" id="memoryGrid"></div>
       <div style="text-align:center;margin-top:14px;">
@@ -7873,12 +8048,12 @@ function startMemoryGame() {
     cards.forEach(card => {
       const div = document.createElement('div');
       div.className = 'memory-card' + (card.flipped ? ' flipped' : '') + (card.matched ? ' matched' : '');
-      if (card.flipped || card.matched) {
-        div.textContent = card.emo;
-      } else {
-        div.classList.add('hidden-face');
-        div.textContent = '?';
-      }
+      div.innerHTML = `
+        <div class="memory-card-inner">
+          <div class="memory-card-face memory-card-back">?</div>
+          <div class="memory-card-face memory-card-front">${card.emo}</div>
+        </div>
+      `;
       div.onclick = () => onCardClick(card);
       grid.appendChild(div);
     });
@@ -7900,16 +8075,20 @@ function startMemoryGame() {
           a.matched = true;
           b.matched = true;
           matchedPairs += 1;
+          combo += 1;
+          bestCombo = Math.max(bestCombo, combo);
           flippedCards = [];
           lockBoard = false;
           sfxCorrect();
           render();
+          burstConfetti(document.getElementById('memoryGrid'));
           if (matchedPairs === emojiPool.length) {
             finishMemoryGame();
           }
         }, 350);
       } else {
         mistakes += 1;
+        combo = 0;
         sfxWrong();
         setTimeout(() => {
           a.flipped = false;
@@ -7917,6 +8096,7 @@ function startMemoryGame() {
           flippedCards = [];
           lockBoard = false;
           render();
+          mgShake(document.getElementById('memoryGrid'));
         }, 700);
       }
     }
@@ -7924,7 +8104,8 @@ function startMemoryGame() {
 
   function finishMemoryGame() {
     consumePlay('memory_match');
-    const reward = Math.max(20, 100 - mistakes * 10);
+    const comboBonus = bestCombo >= 3 ? bestCombo * 5 : 0;
+    const reward = Math.max(20, 100 - mistakes * 10) + comboBonus;
     addCoin(reward);
     if (state.bestMemoryMistakes === null || mistakes < state.bestMemoryMistakes) {
       state.bestMemoryMistakes = mistakes;
@@ -7932,7 +8113,8 @@ function startMemoryGame() {
     addLog(`카드 맞추기 완료! 실수 ${mistakes}번, 코인 +${reward}`);
     checkAchievements();
     saveGame();
-    setTimeout(() => showMinigameSummary('🃏 카드 맞추기 결과', `실수 ${mistakes}번 · 코인 +${reward}`, () => backToMinigameHub()), 400);
+    const comboLine = comboBonus > 0 ? ` · 최고 콤보 ${bestCombo} (보너스 +${comboBonus})` : '';
+    setTimeout(() => showMinigameSummary('🃏 카드 맞추기 결과', `실수 ${mistakes}번 · 코인 +${reward}${comboLine}`, () => backToMinigameHub()), 400);
   }
 
   render();
@@ -7995,13 +8177,18 @@ function startRouletteGame() {
 
     setTimeout(() => {
       const prize = ROULETTE_PRIZES[winIndex];
+      const landedItem = strip.children[targetIndex];
+      if (landedItem) landedItem.classList.add('mg-glow');
+      burstConfetti(strip.parentElement);
       prize.apply(state);
       consumePlay('roulette');
       addLog(`룰렛 결과: ${prize.label}`);
       sfxHatch();
       checkAchievements();
       saveGame();
-      showMinigameSummary('🎰 룰렛 결과', `${prize.icon} ${prize.label}`, () => backToMinigameHub());
+      setTimeout(() => {
+        showMinigameSummary('🎰 룰렛 결과', `${prize.icon} ${prize.label}`, () => backToMinigameHub());
+      }, 500);
     }, 3600);
   };
 }
@@ -8084,18 +8271,18 @@ function startElementBattleGame() {
 
     panel.innerHTML = `
       <div class="panel-title">⚔️ 속성 대결</div>
-      <div class="element-vs-row">
+      <div class="element-vs-row mg-pop" id="battleVsRow">
         <div style="text-align:center;">
-          <div>${mySp.emoji}</div>
+          <div style="font-size:44px;">${mySp.emoji}</div>
           <div>${elementBadgeHtml(myElement)}</div>
         </div>
-        <div class="vs-text">VS</div>
+        <div class="vs-text mg-shake" id="battleVsText">VS</div>
         <div style="text-align:center;">
-          <div>${oppSp.emoji}</div>
+          <div style="font-size:44px;">${oppSp.emoji}</div>
           <div>${elementBadgeHtml(oppElement)}</div>
         </div>
       </div>
-      <div class="feed-result-text" id="battleResultText" style="text-align:center;"></div>
+      <div class="feed-result-text" id="battleResultText" style="text-align:center;">🌀 대결 중...</div>
       <div style="text-align:center;margin-top:10px;">
         <button class="game-btn" id="battleBackBtn3" style="background:var(--border-col);border-bottom-color:#2A2E36;color:var(--text-main);">놀이 목록으로</button>
       </div>
@@ -8119,12 +8306,14 @@ function startElementBattleGame() {
         resultEl.textContent = `🎉 승리! ${J(ELEMENTS[myElement].name, '이가')} ${J(ELEMENTS[oppElement].name, '을를')} 이겼어요. 매력 +${statGain}`;
         resultEl.style.color = 'var(--accent-green-dark)';
         sfxCorrect();
+        burstConfetti(document.getElementById('battleVsRow'));
       } else {
         outcome = 'lose';
         coinReward = 10;
         resultEl.textContent = `😅 패배... ${J(ELEMENTS[oppElement].name, '이가')} ${J(ELEMENTS[myElement].name, '을를')} 이겼어요.`;
         resultEl.style.color = 'var(--accent-red-dark)';
         sfxWrong();
+        mgShake(document.getElementById('battleVsRow'));
       }
 
       addCoin(coinReward);
@@ -8139,6 +8328,305 @@ function startElementBattleGame() {
       document.getElementById('battleBackBtn3').onclick = () => backToMinigameHub();
     }, 900);
   }
+}
+
+// ---------- Mini-game 5: Shadow Match (그림자 맞추기) ----------
+
+const SHADOW_ROUNDS = 5;
+
+function startShadowMatchGame() {
+  document.getElementById('minigameHubPanel').classList.add('section-hidden');
+  const panel = document.getElementById('minigamePlayPanel');
+  panel.classList.remove('section-hidden');
+
+  // 라운드마다 쓸 동물을 중복 없이 미리 뽑아둬요
+  const pool = [...SPECIES].sort(() => Math.random() - 0.5).slice(0, Math.min(SHADOW_ROUNDS, SPECIES.length));
+  let round = 0;
+  let streak = 0;
+  let bestStreak = 0;
+  let correctCount = 0;
+  let locked = false;
+
+  function renderRound() {
+    const answer = pool[round];
+    const distractors = SPECIES.filter(s => s.id !== answer.id).sort(() => Math.random() - 0.5).slice(0, 3);
+    const choices = [answer, ...distractors].sort(() => Math.random() - 0.5);
+
+    panel.innerHTML = `
+      <div class="panel-title">🌑 그림자 맞추기</div>
+      <div class="shadow-progress">${round + 1} / ${pool.length} 라운드 ${streak >= 2 ? `<span class="shadow-streak">🔥 ${streak}연속</span>` : ''}</div>
+      <div class="shadow-stage">
+        <div class="shadow-emoji" id="shadowEmoji">${answer.emoji}</div>
+      </div>
+      <div class="shadow-choices" id="shadowChoices"></div>
+      <div class="shadow-fact" id="shadowFact"></div>
+      <div style="text-align:center;margin-top:6px;">
+        <button class="game-btn" id="shadowBackBtn" style="background:var(--border-col);border-bottom-color:#2A2E36;color:var(--text-main);">돌아가기</button>
+      </div>
+    `;
+    locked = false;
+    const choicesEl = document.getElementById('shadowChoices');
+    choices.forEach(sp => {
+      const btn = document.createElement('button');
+      btn.className = 'shadow-choice-btn';
+      btn.textContent = sp.name;
+      btn.onclick = () => onChoose(sp, answer, btn, choicesEl);
+      choicesEl.appendChild(btn);
+    });
+    document.getElementById('shadowBackBtn').onclick = () => backToMinigameHub();
+  }
+
+  function onChoose(picked, answer, btnEl, choicesEl) {
+    if (locked) return;
+    locked = true;
+    const emojiEl = document.getElementById('shadowEmoji');
+    emojiEl.classList.add('revealed');
+    const factEl = document.getElementById('shadowFact');
+    [...choicesEl.children].forEach(b => { b.disabled = true; });
+
+    if (picked.id === answer.id) {
+      streak += 1;
+      bestStreak = Math.max(bestStreak, streak);
+      correctCount += 1;
+      btnEl.classList.add('correct');
+      sfxCorrect();
+      burstConfetti(panel);
+    } else {
+      streak = 0;
+      btnEl.classList.add('wrong');
+      [...choicesEl.children].forEach(b => { if (b.textContent === answer.name) b.classList.add('correct'); });
+      sfxWrong();
+      mgShake(emojiEl);
+    }
+    factEl.textContent = `💡 ${answer.name}: ${answer.fact}`;
+
+    setTimeout(() => {
+      round += 1;
+      if (round >= pool.length) finishShadowMatch();
+      else renderRound();
+    }, 1400);
+  }
+
+  function finishShadowMatch() {
+    consumePlay('shadow_match');
+    const reward = correctCount * 15 + (bestStreak >= 3 ? bestStreak * 5 : 0);
+    const scienceReward = correctCount * 4;
+    addCoin(reward);
+    state.science = (state.science || 0) + scienceReward;
+    addLog(`그림자 맞추기 완료! ${correctCount}/${pool.length}문제 정답, 코인 +${reward}, 연구 +${scienceReward}`);
+    checkAchievements();
+    saveGame();
+    setTimeout(() => showMinigameSummary('🌑 그림자 맞추기 결과',
+      `${correctCount}/${pool.length}문제 정답 · 코인 +${reward} · 연구 +${scienceReward}`,
+      () => backToMinigameHub()), 400);
+  }
+
+  renderRound();
+}
+
+// ---------- Mini-game 6: Catch Basket (먹이 바구니 받기) ----------
+
+const CATCH_GOOD_ITEMS = [
+  { emoji: '🌾', weight: 5, coin: 3, food: 1 },
+  { emoji: '🍎', weight: 4, coin: 4, food: 1 },
+  { emoji: '💰', weight: 3, coin: 8 },
+  { emoji: '⭐', weight: 2, coin: 6 },
+  { emoji: '💎', weight: 1, coin: 0, gem: 1 },
+];
+const CATCH_BAD_ITEMS = [
+  { emoji: '💣' },
+  { emoji: '🌰' },
+];
+const CATCH_DURATION_MS = 40000;
+
+function pickWeighted(pool, weightKey) {
+  const total = pool.reduce((s, p) => s + (p[weightKey] || 1), 0);
+  let r = Math.random() * total;
+  for (const p of pool) {
+    r -= (p[weightKey] || 1);
+    if (r <= 0) return p;
+  }
+  return pool[pool.length - 1];
+}
+
+function startCatchGame() {
+  document.getElementById('minigameHubPanel').classList.add('section-hidden');
+  const panel = document.getElementById('minigamePlayPanel');
+  panel.classList.remove('section-hidden');
+
+  panel.innerHTML = `
+    <div class="panel-title">🧺 먹이 바구니 받기</div>
+    <div class="catch-hud">
+      <span class="catch-hearts" id="catchHearts">❤️❤️❤️</span>
+      <span class="catch-score" id="catchScore">🌾 0</span>
+      <span class="catch-timer" id="catchTimer">40초</span>
+    </div>
+    <div class="catch-game-area" id="catchArea">
+      <div class="catch-basket" id="catchBasket" style="left:50%;">🧺</div>
+    </div>
+    <div class="catch-hint">마우스나 손가락으로 바구니를 움직여보세요!</div>
+    <div style="text-align:center;margin-top:10px;">
+      <button class="game-btn" id="catchBackBtn" style="background:var(--border-col);border-bottom-color:#2A2E36;color:var(--text-main);">돌아가기</button>
+    </div>
+  `;
+
+  const area = document.getElementById('catchArea');
+  const basketEl = document.getElementById('catchBasket');
+  const AREA_W = 340;
+  const AREA_H = 380;
+  const BASKET_HALF = 29;
+
+  let running = true;
+  let basketX = AREA_W / 2;
+  let targetX = basketX;
+  let lives = 3;
+  let totalReward = { coin: 0, food: 0, gem: 0 };
+  let caughtCount = 0;
+  let items = [];
+  let itemIdSeq = 0;
+  let spawnInterval = 900;
+  let fallSpeed = 90;
+  let elapsed = 0;
+  let lastTs = null;
+  let rafId = null;
+  let spawnTimerId = null;
+  let difficultyTimerId = null;
+
+  function endGame(reason) {
+    if (!running) return;
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    if (spawnTimerId) clearInterval(spawnTimerId);
+    if (difficultyTimerId) clearInterval(difficultyTimerId);
+    area.removeEventListener('pointermove', onPointerMove);
+    area.removeEventListener('pointerdown', onPointerMove);
+
+    consumePlay('catch_game');
+    addCoin(totalReward.coin);
+    state.food += totalReward.food;
+    state.gem = (state.gem || 0) + totalReward.gem;
+    addLog(`먹이 바구니 받기 완료! ${caughtCount}개 받음, 코인 +${totalReward.coin}, 먹이 +${totalReward.food}${totalReward.gem ? `, 보석 +${totalReward.gem}` : ''}`);
+    checkAchievements();
+    saveGame();
+
+    const parts = [`${caughtCount}개 받음`, `코인 +${totalReward.coin}`];
+    if (totalReward.food) parts.push(`먹이 +${totalReward.food}`);
+    if (totalReward.gem) parts.push(`보석 +${totalReward.gem}`);
+    setTimeout(() => showMinigameSummary('🧺 먹이 바구니 받기 결과', parts.join(' · '), () => backToMinigameHub()), 400);
+  }
+
+  function onPointerMove(e) {
+    if (!running) return;
+    const rect = area.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const relX = (clientX - rect.left) * (AREA_W / rect.width);
+    targetX = Math.max(BASKET_HALF, Math.min(AREA_W - BASKET_HALF, relX));
+  }
+  area.addEventListener('pointermove', onPointerMove);
+  area.addEventListener('pointerdown', onPointerMove);
+
+  function spawnItem() {
+    if (!running) return;
+    const isBad = Math.random() < 0.22;
+    const def = isBad ? CATCH_BAD_ITEMS[Math.floor(Math.random() * CATCH_BAD_ITEMS.length)]
+                       : pickWeighted(CATCH_GOOD_ITEMS, 'weight');
+    const el = document.createElement('div');
+    el.className = 'catch-item';
+    el.textContent = def.emoji;
+    const x = Math.random() * (AREA_W - 30) + 15;
+    el.style.left = x + 'px';
+    el.style.top = '-20px';
+    area.appendChild(el);
+    items.push({ id: itemIdSeq++, x, y: -20, speed: fallSpeed + Math.random() * 30, def, isBad, el, caught: false });
+  }
+
+  function popText(x, y, text, color) {
+    const p = document.createElement('div');
+    p.className = 'catch-pop';
+    p.textContent = text;
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+    p.style.color = color;
+    area.appendChild(p);
+    setTimeout(() => p.remove(), 620);
+  }
+
+  function updateHud() {
+    document.getElementById('catchHearts').textContent = '❤️'.repeat(Math.max(0, lives)) + '🖤'.repeat(3 - Math.max(0, lives));
+    document.getElementById('catchScore').textContent = `🌾 ${totalReward.coin}`;
+    const secLeft = Math.max(0, Math.ceil((CATCH_DURATION_MS - elapsed) / 1000));
+    document.getElementById('catchTimer').textContent = `${secLeft}초`;
+  }
+
+  function tick(ts) {
+    if (!running) return;
+    if (lastTs === null) lastTs = ts;
+    const dt = Math.min(48, ts - lastTs) / 1000;
+    lastTs = ts;
+    elapsed += dt * 1000;
+
+    basketX += (targetX - basketX) * Math.min(1, dt * 14);
+    basketEl.style.left = basketX + 'px';
+
+    const basketY = AREA_H - 8 - 22;
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      if (it.caught) continue;
+      it.y += it.speed * dt;
+      it.el.style.top = it.y + 'px';
+
+      if (it.y >= basketY - 14 && it.y <= basketY + 20 && Math.abs(it.x - basketX) < BASKET_HALF) {
+        it.caught = true;
+        it.el.remove();
+        items.splice(i, 1);
+        if (it.isBad) {
+          lives -= 1;
+          sfxWrong();
+          mgShake(area);
+          popText(it.x, basketY - 20, '💥', 'var(--accent-red)');
+          if (lives <= 0) { updateHud(); endGame('lives'); return; }
+        } else {
+          caughtCount += 1;
+          totalReward.coin += it.def.coin || 0;
+          totalReward.food += it.def.food || 0;
+          totalReward.gem += it.def.gem || 0;
+          sfxCorrect();
+          const label = it.def.gem ? `💎+1` : `+${it.def.coin || 0}`;
+          popText(it.x, basketY - 20, label, 'var(--accent-green-dark)');
+        }
+        updateHud();
+      } else if (it.y > AREA_H + 20) {
+        it.el.remove();
+        items.splice(i, 1);
+      }
+    }
+
+    if (elapsed >= CATCH_DURATION_MS) { updateHud(); endGame('time'); return; }
+    updateHud();
+    rafId = requestAnimationFrame(tick);
+  }
+
+  spawnTimerId = setInterval(spawnItem, spawnInterval);
+  difficultyTimerId = setInterval(() => {
+    if (!running) return;
+    spawnInterval = Math.max(380, spawnInterval - 90);
+    fallSpeed = Math.min(260, fallSpeed + 22);
+    clearInterval(spawnTimerId);
+    spawnTimerId = setInterval(spawnItem, spawnInterval);
+  }, 8000);
+
+  document.getElementById('catchBackBtn').onclick = () => {
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    if (spawnTimerId) clearInterval(spawnTimerId);
+    if (difficultyTimerId) clearInterval(difficultyTimerId);
+    area.removeEventListener('pointermove', onPointerMove);
+    area.removeEventListener('pointerdown', onPointerMove);
+    backToMinigameHub();
+  };
+
+  updateHud();
+  rafId = requestAnimationFrame(tick);
 }
 
 // ===================== RANDOM EVENTS =====================
@@ -10321,26 +10809,6 @@ function renderCloudModal(onlyIfOpen) {
   nickSec.insertAdjacentHTML('beforeend',
     `<div class="cloud-note">실제 이름 대신 별명을 써주세요. 다른 사람에게 보이는 정보예요.</div>`);
   body.appendChild(nickSec);
-
-  // --- 호칭 ---
-  const callSec = document.createElement('div');
-  callSec.className = 'cloud-sec';
-  callSec.innerHTML = `<h4>🗣️ 마을 어른들이 부르는 말</h4>`;
-  const callChips = document.createElement('div');
-  callChips.className = 'dye-chips';
-  const paintCalls = () => {
-    callChips.innerHTML = '';
-    CALLS.forEach(c => {
-      const b = document.createElement('button');
-      b.className = 'dye-chip' + (state.call === c.id ? ' on' : '');
-      b.textContent = c.label;
-      b.onclick = () => { state.call = c.id; sfxClick(); saveGame(); paintCalls(); renderNpcBars(); };
-      callChips.appendChild(b);
-    });
-  };
-  paintCalls();
-  callSec.appendChild(callChips);
-  body.appendChild(callSec);
 
   // --- 내 친구 코드 ---
   const codeSec = document.createElement('div');
