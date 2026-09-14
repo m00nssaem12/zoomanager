@@ -454,7 +454,7 @@
     background:
       linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 40%),
       repeating-linear-gradient(180deg, var(--leaf) 0px, var(--leaf) 3px, var(--leaf-light) 3px, var(--leaf-light) 4px);
-    padding: 11px 16px;
+    padding: 18px 22px;
     border-radius: var(--r-sm);
     cursor: pointer;
     text-align: center;
@@ -1506,7 +1506,7 @@
   .rank-item .ri-val { font-weight: 800; color: var(--accent-green-dark); }
   .code-input {
     font-family: monospace; font-size: 13px; width: 100%;
-    border: 2px solid var(--border-col); border-radius: var(--r-md); padding: 8px;
+    border: 2px solid var(--border-col); border-radius: var(--r-md); padding: 16px 16px;
     background: var(--bg-panel-light); color: var(--text-main);
   }
   .friend-board {
@@ -1845,6 +1845,7 @@
     border-radius: 22px 20px 23px 19px / 20px 23px 19px 22px !important;
     background: rgba(255,255,255,.6);
     font-weight: 800;
+    padding: 10px 12px !important;
   }
 
   /* ── 로그가 부드럽게 등장 ── */
@@ -2035,11 +2036,11 @@
   /* ── 둥글둥글 토큰 ──────────────────────────
      모서리를 한 곳에서 관리해요. 값을 키우면 전체가 같이 둥글어집니다. */
   :root {
-    --r-xs: 8px;     /* 아주 작은 칩 */
-    --r-sm: 12px;    /* 작은 버튼, 배지 */
-    --r-md: 18px;    /* 보통 버튼, 입력칸 */
-    --r-lg: 24px;    /* 카드, 패널 */
-    --r-xl: 30px;    /* 큰 모달, 무대 */
+    --r-xs: 6px;     /* 아주 작은 칩 */
+    --r-sm: 9px;     /* 작은 버튼, 배지 */
+    --r-md: 13px;    /* 보통 버튼, 입력칸 */
+    --r-lg: 18px;    /* 카드, 패널 */
+    --r-xl: 22px;    /* 큰 모달, 무대 */
     --r-full: 999px; /* 알약 */
   }
 
@@ -9456,7 +9457,7 @@ function rollTrait() { return TRAITS[Math.floor(Math.random() * TRAITS.length)].
 function traitBadgeHtml(traitId) {
   const t = traitById(traitId);
   if (!t) return '';
-  return `<span class="trait-badge" title="${t.desc}">${badgeSvg(t.id, 16)} ${t.name}</span>`;
+  return `<span class="trait-badge" title="${escapeHtml(t.desc)}">${badgeSvg(t.id, 16)} ${escapeHtml(t.name)}</span>`;
 }
 
 // ===================== DATA: CROPS (작물) =====================
@@ -11555,7 +11556,7 @@ function specById(speciesId) { return SPECIES_SPEC[speciesId]; }
 function specBadgeHtml(speciesId) {
   const s = SPECIES_SPEC[speciesId];
   if (!s) return '';
-  return `<span class="spec-badge" title="${s.desc}">⭐ ${s.name}</span>`;
+  return `<span class="spec-badge" title="${escapeHtml(s.desc)}">⭐ ${escapeHtml(s.name)}</span>`;
 }
 
 // 같은 종을 여러 마리 길러도 한 번만 세요
@@ -13039,7 +13040,7 @@ function eggPeekSvg(egg) {
     const inner = hasArt(sp.id)
       ? `<svg class="${cls}" viewBox="-105 -180 210 196"><use href="#spr-${sp.id}"/></svg>`
       : `<div class="${cls} peek-emoji">${sp.emoji}</div>`;
-    return `<div class="peek-slot" title="${found ? sp.name : '???'}">${inner}</div>`;
+    return `<div class="peek-slot" title="${escapeHtml(found ? sp.name : '???')}">${inner}</div>`;
   }).join('');
 }
 
@@ -13097,10 +13098,16 @@ function dyeRowHtml(animal) {
   const cur = animal.dye || 'none';
   const chips = DYES.map(d => {
     const owned = cur === d.id;
-    const cost = d.price === 0 ? '' :
+    // 화면에 보일 값 (그림 포함)
+    const costHtml = d.price === 0 ? '' :
       (d.currency === 'gem' ? `${resSvg('gem',14)}${d.price}` : `${resSvg('coin',14)}${d.price}`);
-    return `<button class="dye-chip${owned ? ' on' : ''}" data-dye="${d.id}" title="${d.name}${cost ? ' · ' + cost : ''}">
-        <span class="dye-dot" style="background:${d.swatch}"></span>${d.name}${cost ? `<span class="dye-cost">${cost}</span>` : ''}
+    // 마우스를 올렸을 때 뜨는 글자 — 여기엔 그림을 넣으면 안 돼요
+    const costText = d.price === 0 ? ''
+      : ` · ${d.price}${d.currency === 'gem' ? '보석' : '코인'}`;
+    return `<button class="dye-chip${owned ? ' on' : ''}" data-dye="${d.id}"
+        title="${escapeHtml(d.name + costText)}">
+        <span class="dye-dot" style="background:${d.swatch}"></span>${escapeHtml(d.name)}${
+          costHtml ? `<span class="dye-cost">${costHtml}</span>` : ''}
       </button>`;
   }).join('');
   return `<div class="dye-row"><div class="dye-title">🎨 염색</div><div class="dye-chips">${chips}</div></div>`;
@@ -15355,27 +15362,38 @@ function startFeedTossGame() {
       if (step.pick === 'big') {
         inner = art(Math.round(52 * scales[o.rank]));
       } else if (step.pick === 'dirty') {
-        // 흙 얼룩을 실제로 뿌려요
+        // 흙 얼룩을 실제로 뿌려요 — 작물 모양 안에만 묻도록 잘라내요
+        const [dvx, dvy, dvw, dvh] = cropViewBox('crop-' + crop.id).split(' ').map(Number);
         const blobs = [0, 1, 3, 5][3 - o.rank];
         let dirt = '';
         for (let i = 0; i < blobs; i++) {
-          const cx = 6 + (i * 37) % 26, cy = 8 + (i * 53) % 22, r = 2 + (i % 3);
+          const cx = dvx + ((6 + (i * 37) % 26) / 32) * dvw;
+          const cy = dvy + ((8 + (i * 53) % 22) / 32) * dvh;
+          const r = (2 + (i % 3)) * Math.min(dvw, dvh) / 32;
           dirt += `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r * 0.7}" fill="#8C6B4A" opacity=".55"/>`;
         }
         inner = `<div style="position:relative;width:44px;height:44px;">${art(44)}`
-              + `<svg viewBox="0 0 32 32" style="position:absolute;inset:0;width:44px;height:44px;">${dirt}</svg></div>`;
+              + `<svg viewBox="${dvx} ${dvy} ${dvw} ${dvh}" style="position:absolute;inset:0;width:44px;height:44px;">`
+              + `<defs><clipPath id="ftClipDirty-${crop.id}-${o.rank}"><use href="#crop-${crop.id}"/></clipPath></defs>`
+              + `<g clip-path="url(#ftClipDirty-${crop.id}-${o.rank})">${dirt}</g></svg></div>`;
       } else if (step.pick === 'raw') {
-        // 덜 익은 건 초록빛이 남아요
+        // 덜 익은 건 초록빛이 남아요 — 작물 모양 그대로 잘라내서(누끼) 덮어요
+        const [rvx, rvy, rvw, rvh] = cropViewBox('crop-' + crop.id).split(' ').map(Number);
         const green = [0.75, 0.45, 0.22, 0][o.rank];
         inner = `<div style="position:relative;width:44px;height:44px;">${art(44)}`
-              + `<svg viewBox="0 0 32 32" style="position:absolute;inset:0;width:44px;height:44px;mix-blend-mode:multiply;">`
-              + `<rect width="32" height="32" fill="#7FA34A" opacity="${green}"/></svg></div>`;
+              + `<svg viewBox="${rvx} ${rvy} ${rvw} ${rvh}" style="position:absolute;inset:0;width:44px;height:44px;mix-blend-mode:multiply;">`
+              + `<defs><clipPath id="ftClipRaw-${crop.id}-${o.rank}"><use href="#crop-${crop.id}"/></clipPath></defs>`
+              + `<g clip-path="url(#ftClipRaw-${crop.id}-${o.rank})">`
+              + `<rect x="${rvx}" y="${rvy}" width="${rvw}" height="${rvh}" fill="#7FA34A" opacity="${green}"/></g></svg></div>`;
       } else if (step.pick === 'pretty') {
-        // 고운 건 또렷하고, 아닌 건 빛이 바랬어요
+        // 고운 건 또렷하고, 아닌 건 빛이 바랬어요 — 작물 모양 그대로 잘라내서(누끼) 덮어요
+        const [pvx, pvy, pvw, pvh] = cropViewBox('crop-' + crop.id).split(' ').map(Number);
         const fade = [0, 0.18, 0.34, 0.52][o.rank];
         inner = `<div style="position:relative;width:44px;height:44px;">${art(44)}`
-              + `<svg viewBox="0 0 32 32" style="position:absolute;inset:0;width:44px;height:44px;">`
-              + `<rect width="32" height="32" fill="#F7F1E3" opacity="${fade}"/></svg></div>`;
+              + `<svg viewBox="${pvx} ${pvy} ${pvw} ${pvh}" style="position:absolute;inset:0;width:44px;height:44px;">`
+              + `<defs><clipPath id="ftClipPretty-${crop.id}-${o.rank}"><use href="#crop-${crop.id}"/></clipPath></defs>`
+              + `<g clip-path="url(#ftClipPretty-${crop.id}-${o.rank})">`
+              + `<rect x="${pvx}" y="${pvy}" width="${pvw}" height="${pvh}" fill="#F7F1E3" opacity="${fade}"/></g></svg></div>`;
       } else {
         const tilt = [0, 7, 14, 22][o.rank];
         inner = `<svg viewBox="0 0 32 32" style="width:44px;height:44px;display:block;transform:rotate(${tilt}deg);">`
@@ -19270,7 +19288,7 @@ function startDishGame() {
 // 원작 '과일 깎기 기네스북'은 초급 하나.
 // 60초 동안 깎고, 과일 하나당 20점. 200점을 넘기면 성공이에요.
 const PEEL_TIERS = [
-  { id: 'only', label: '시작', secs: 60, notes: 9, per: 20, goal: 200,
+  { id: 'only', label: '시작', secs: 60, notes: 9, len: 9, spacePer: 0.15, per: 20, goal: 200,
     note: '"60초일세. 200점만 넘겨보게."' },
 ];
 
@@ -19449,17 +19467,20 @@ function startPeelGame() {
   function drawFruit() {
     const el = document.getElementById('peFruit');
     if (!el || !fruit) return;
-    // 깎일수록 껍질이 벗겨져요
-    const peeled = Math.round(peelT * 100);
+    // 깎일수록 껍질이 벗겨져요 — 덮개는 작물 모양 그대로 잘라내서(누끼) 씌워요
+    const vb = cropViewBox('crop-' + fruit).split(' ').map(Number);
+    const [vx, vy, vw, vh] = vb;
+    const coverH = vh * (1 - peelT);
     el.innerHTML = `
       <div style="position:relative;">
-        <svg viewBox="${cropViewBox('crop-' + fruit)}" style="width:100%;display:block;">
-          <use href="#crop-${fruit}"/></svg>
-        <div style="position:absolute;inset:0;overflow:hidden;height:${100 - peeled}%;
-             mix-blend-mode:multiply;opacity:.55;">
-          <svg viewBox="0 0 32 32" preserveAspectRatio="none" style="width:100%;height:100%;">
-            <rect width="32" height="32" fill="#6E8C4A"/></svg>
-        </div>
+        <svg viewBox="${vx} ${vy} ${vw} ${vh}" style="width:100%;display:block;">
+          <defs><clipPath id="peClip-${fruit}"><use href="#crop-${fruit}"/></clipPath></defs>
+          <use href="#crop-${fruit}"/>
+          <g clip-path="url(#peClip-${fruit})">
+            <rect x="${vx}" y="${vy}" width="${vw}" height="${coverH}"
+                  fill="#6E8C4A" opacity=".55" style="mix-blend-mode:multiply;"/>
+          </g>
+        </svg>
       </div>`;
   }
 
@@ -25637,6 +25658,9 @@ const SEEK_ITEMS = [
   { id: 'bell',    name: '방울',     ico: 'bell' },
   { id: 'compass', name: '나침반',   ico: 'compass' },
 ];
+
+// 화면을 채우는 잡동사니 (정답이 아닌 미끼 그림들)
+const SEEK_CLUTTER = ['book1', 'book2', 'book3', 'candle', 'flask', 'mirror', 'pot', 'thread', 'clip', 'pin', 'wand'];
 
 const SEEK_COLS = 12, SEEK_ROWS = 9;   // 배경을 나눈 격자
 
