@@ -682,6 +682,8 @@
     box-shadow: inset 0 -5px 8px rgba(107,69,38,.18);
     animation: hatchBounce 0.6s ease;
   }
+  .hatch-emoji.rarity-rare { border-color: var(--sky-tag-dark); background: radial-gradient(circle at 35% 28%, #EAF6FC, #B9DBF7 80%); }
+  .hatch-emoji.rarity-epic { border-color: var(--wood-dark); background: radial-gradient(circle at 35% 28%, #FFF6D8, #F0CE73 80%); }
 
   @keyframes hatchBounce {
     0% { transform: scale(0) rotate(0deg); }
@@ -1285,6 +1287,12 @@
     color: #fff; padding: 6px 16px; border-radius: var(--r-full); border: none;
     background: var(--accent-amber); border-bottom: 3px solid var(--accent-amber-dark); }
   .dlg-portrait-svg { width: 100%; height: 100%; }
+  .dlg-skip {
+    position: absolute; top: 14px; right: 14px; z-index: 91;
+    width: 34px; height: 34px; border-radius: 50%; border: none;
+    background: rgba(0,0,0,.32); color: #fff; font-size: 16px;
+    font-weight: 900; cursor: pointer; line-height: 1;
+  }
   @media (max-width: 520px) {
     .dlg-bg { padding: 10px; }
     .dlg-big { width: min(78vw, 260px); max-height: 40vh; }
@@ -2298,6 +2306,12 @@
     position: absolute; left: 50%; bottom: 26%; width: 104px; height: 104px;
     transform: translateX(-50%); z-index: 6;
   }
+  .tw-hero::before {
+    content: ''; position: absolute; left: 50%; bottom: -6px; width: 96px; height: 78px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse, rgba(255,253,248,.92) 0%, rgba(242,230,210,.85) 55%, rgba(242,230,210,0) 82%);
+    border-radius: 50%; z-index: -1; pointer-events: none;
+  }
   .tw-hero svg {
     width: 100%; height: 100%; display: block; overflow: visible;
     filter: drop-shadow(0 0 2px rgba(0,0,0,.75)) drop-shadow(0 6px 6px rgba(0,0,0,.4));
@@ -2495,6 +2509,12 @@
   }
   .dr-wear  { animation: dr-wear .3s cubic-bezier(.2,1.3,.4,1); }
   .dr-twirl { animation: dr-twirl .7s ease-in-out; }
+  @keyframes dr-wear2 {
+    0%   { transform: translateY(-6px) scale(.86); opacity: 0; }
+    65%  { transform: translateY(1px) scale(1.04); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  .dr-wear2 { animation: dr-wear2 .3s cubic-bezier(.2,1.3,.4,1); transform-box: fill-box; transform-origin: center; }
 
   /* 물건 찾기 — 찾은 물건이 튀어나오고, 헛짚으면 물결이 퍼져요 */
   @keyframes sk-found {
@@ -2513,6 +2533,19 @@
   .sk-found   { animation: sk-found .42s cubic-bezier(.2,1.4,.4,1); }
   .sk-ripple  { animation: sk-ripple .5s ease-out forwards; }
   .sk-listpop { animation: sk-listpop .45s ease-out; }
+
+  /* 루미의 그림 찾기 — 화면을 덮은 헝겊 조각들. 누르면 그 조각만 사라져요 */
+  .sk-cell {
+    width: 100%; height: 100%; border: none; padding: 0; margin: 0;
+    cursor: pointer; box-sizing: border-box;
+    background-image: radial-gradient(circle at 32% 24%, #A493C4 0%, #7A6A98 38%, #564A78 72%, #3E3454 100%);
+    border: 1px solid rgba(255,255,255,.07);
+    transition: transform .3s cubic-bezier(.3,0,.3,1), opacity .3s ease;
+  }
+  .sk-cell-open {
+    opacity: 0; transform: scale(.35) rotate(8deg);
+    pointer-events: none; cursor: default;
+  }
 
   /* 이상한 방 — 촛불이 흔들리고, 주운 물건이 가방으로 들어가요 */
   @keyframes rm-flicker {
@@ -11127,7 +11160,7 @@ function openJourney(uidVal) {
       <div class="ex-hero${ride && ride.id !== 'walk' ? ' ride-' + ride.id : ''}" id="exHero">
         ${hasArt(animal.speciesId)
           ? `<svg class="spr-crisp" viewBox="-105 -185 210 200" style="width:100%;"><use href="#spr-${animal.speciesId}"${dyeStyle(animal)}/></svg>`
-          : `<div style="font-size:58px;text-align:center;">${speciesById(animal.speciesId).emoji}</div>`}
+          : emojiFallbackHtml(animal, speciesById(animal.speciesId), 52)}
       </div>
 
       <div class="ex-note" id="exNote"></div>
@@ -11267,7 +11300,7 @@ function renderTowerStage(lines) {
       <div class="tw-hero tw-enter" id="twHero">
         ${hasArt(animal.speciesId)
           ? `<svg class="spr-crisp" viewBox="-105 -185 210 200" style="width:100%;"><use href="#spr-${animal.speciesId}"${dyeStyle(animal)}/></svg>`
-          : `<div style="font-size:64px;text-align:center;">${sp.emoji}</div>`}
+          : emojiFallbackHtml(animal, sp, 56)}
       </div>
 
       <div class="tw-hpwrap">
@@ -12104,8 +12137,10 @@ function renderAnimalList() {
     const minStat = animalMinStat(animal);
     const pct = Math.min(100, Math.round((minStat / STAT_CAP_ENDING) * 100));
     const needsAttention = animal.affection < 20 || animal.health4 < 20;
+    const dye = dyeById(animal.dye);
+    const emojiBg = dye.id !== 'none' ? ` style="background:radial-gradient(circle at 35% 30%, #FFFFFF, ${dye.swatch} 85%);"` : '';
     div.innerHTML = `
-      <div class="emoji">${sp.emoji}</div>
+      <div class="emoji"${emojiBg}>${sp.emoji}</div>
       <div class="info">
         <div class="name">${animal.name} ${needsAttention ? '<span class="warn-icon">⚠️</span>' : ''}${stage === 3 ? '<span class="growth-badge ready">엔딩 가능</span>' : ''}</div>
         <div class="lv">${ELEMENTS[animal.element] ? ELEMENTS[animal.element].icon : ''} ${isAway(animal) ? '<span class="away-tag">🗺️ 원정 중</span>' : growthStageLabel(stage)}</div>
@@ -13066,6 +13101,14 @@ function dyeStyle(animal) {
   return d.paint ? ` style="--dyeFur:${d.paint}"` : '';
 }
 
+// 아트가 없어서 이모지로 대신 그릴 때도, 염색했으면 그 색이 배경 원에 보이게 해줘요.
+function emojiFallbackHtml(animal, sp, sizePx) {
+  const dye = dyeById(animal && animal.dye);
+  const rarityClass = sp.rarity !== 'common' ? ' rarity-' + sp.rarity : '';
+  const bg = dye.id !== 'none' ? `background:radial-gradient(circle at 35% 28%, #FFFFFF, ${dye.swatch} 85%);` : '';
+  return `<div class="animal-big-emoji${rarityClass}" style="width:100%;height:100%;font-size:${sizePx}px;cursor:default;${bg}">${sp.emoji}</div>`;
+}
+
 function dyeAnimal(uidVal, dyeId) {
   const animal = state.animals.find(a => a.uid === uidVal);
   const dye = dyeById(dyeId);
@@ -13324,6 +13367,7 @@ function startDialogue(lines, onEnd) {
 
   root.innerHTML = `
     <div class="dlg-bg" id="dlgBg">
+      <button class="dlg-skip" id="dlgSkip" aria-label="대화 닫기">✕</button>
       <div class="dlg-stage" id="dlgStage"></div>
       <div class="dlg-box" id="dlgBox">
         <div class="dlg-main">
@@ -13341,6 +13385,7 @@ function startDialogue(lines, onEnd) {
     if (e.target.id !== 'dlgNext') advanceDialogue();
   };
   document.getElementById('dlgNext').onclick = e => { e.stopPropagation(); advanceDialogue(); };
+  document.getElementById('dlgSkip').onclick = e => { e.stopPropagation(); sfxClick(); endDialogue(); };
   showDialogueLine();
 }
 
@@ -14037,7 +14082,7 @@ function showHatchModal(sp, isNew) {
                <ellipse cx="0" cy="-4" rx="70" ry="14" fill="#2E5628" opacity=".14"/>
                <use href="#spr-${sp.id}"/>
              </svg>`
-          : `<div class="hatch-emoji">${sp.emoji}</div>`}
+          : `<div class="hatch-emoji${sp.rarity !== 'common' ? ' rarity-' + sp.rarity : ''}">${sp.emoji}</div>`}
         <div class="hatch-title">알이 부화했어요!</div>
         ${isNew ? '<div class="hatch-new-badge">NEW! 도감에 등록됨</div><br>' : ''}
         <div class="hatch-name">${sp.name}</div>
@@ -19737,25 +19782,28 @@ function startDressGame() {
     `;
   }
 
+  // 몸(ico-g-dr-body, viewBox 0 0 32 44)과 같은 좌표계 안에 각 옷을 정확한 위치·크기로 겹쳐 그려요.
+  // 예전에는 각 옷 그림을 몸과 무관한 32x32 정사각형으로 씌워서 머리/발 위치가 잘 안 맞았어요.
+  const DRESS_RECT = {
+    hair:  { x: 7,   y: -4, w: 18, h: 20 },  // 머리 위(왕관 등 여유 포함)부터 턱선까지
+    dress: { x: 6.5, y: 13, w: 19, h: 24 },  // 어깨선부터 발목 위까지
+    shoe:  { x: 10,  y: 35, w: 12, h: 9  },  // 발목~발
+    item:  { x: -2,  y: 18, w: 13, h: 13 },  // 허리 옆에 드는 소품
+  };
+  const DRESS_LAYER_ORDER = ['dress', 'shoe', 'hair', 'item']; // 뒤에 올수록 위에 그려져요
+
   function draw() {
     const room = document.getElementById('drRoom');
     if (!room) return;
 
-    // 꼬미가 입은 모습
-    const worn = DRESS_SLOTS.map(sl => {
-      const id = picked[sl.key];
+    // 꼬미가 입은 모습 — 몸과 동일한 32x44 좌표계 안에서 겹쳐요.
+    const worn = DRESS_LAYER_ORDER.map(key => {
+      const id = picked[key];
       if (!id) return '';
-      const it = DRESS_ITEMS[sl.key].find(x => x.id === id);
+      const it = DRESS_ITEMS[key].find(x => x.id === id);
       if (!it || id === 'none') return '';
-      const z = { dress: 2, shoe: 3, hair: 4, item: 5 }[sl.key];
-      const pos = {
-        hair:  'top:2%;left:50%;width:46%;',
-        dress: 'top:30%;left:50%;width:52%;',
-        shoe:  'top:74%;left:50%;width:44%;',
-        item:  'top:44%;left:14%;width:26%;',
-      }[sl.key];
-      return `<div class="dr-wear" style="position:absolute;${pos}transform:translateX(-50%);z-index:${z};">
-        <svg viewBox="0 0 32 32" style="width:100%;"><use href="#ico-g-${it.ico}"/></svg></div>`;
+      const r = DRESS_RECT[key];
+      return `<use class="dr-wear2" href="#ico-g-${it.ico}" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}"/>`;
     }).join('');
 
     room.innerHTML = `
@@ -19771,14 +19819,15 @@ function startDressGame() {
       <!-- 꼬미 -->
       <div style="flex:none;display:flex;justify-content:center;padding:4px 0 2px;">
         <div style="position:relative;width:112px;height:150px;">
-          <div style="position:absolute;inset:0;z-index:1;">
-            <svg viewBox="0 0 32 44" style="width:100%;height:100%;"><use href="#ico-g-dr-body"/></svg>
-          </div>
-          ${worn}
+          <svg viewBox="0 0 32 44" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;">
+            <use href="#ico-g-dr-body"/>
+            ${worn}
+          </svg>
         </div>
       </div>
 
       <!-- 고른 것 요약 -->
+
       <div style="flex:none;display:flex;justify-content:center;gap:6px;padding:2px 0 6px;">
         ${DRESS_SLOTS.map(sl => {
           const on = cat === sl.key;
@@ -25674,6 +25723,11 @@ const LUMI_MISS = [
   '"음... 조금만 더 위쪽일지도요."',
   '"아, 괜찮아요. 저도 자주 그래요."',
 ];
+const LUMI_PARTIAL = [
+  '"어? 여기 뭔가 있는 것 같아요!"',
+  '"오, 조금 보여요! 계속 걷어봐요."',
+  '"잠깐, 이 밑에 뭔가... 마저 걷어보세요!"',
+];
 
 function startCatchGame() {
   mgBegin();
@@ -25685,16 +25739,17 @@ function startCatchGame() {
   let hidden = [];        // {item, col, row, size, found}
   let taps = 0;
   let found = 0;
-  let marks = [];         // 헛짚은 자리
+  let revealed = [];      // [row][col] 헝겊이 걷혔는지
+  let coverEls = [];      // [row][col] 헝겊 버튼 DOM
   let clutter = [];       // 화면을 덮는 잡동사니
   let over = false;
 
   function renderPick() {
     panel.innerHTML = `
       <div style="text-align:center;">
-        <div style="font-size:56px;line-height:1;">🔍</div>
+        <div style="font-size:56px;line-height:1;">🧵</div>
         <div style="font-size:15px;font-weight:800;color:#F7EFDC;
-             text-shadow:0 2px 0 rgba(0,0,0,.35);margin-top:8px;">그림 속에 물건이 숨어 있어요</div>
+             text-shadow:0 2px 0 rgba(0,0,0,.35);margin-top:8px;">루미가 헝겊으로 덮어버린 책상이에요.<br>조금씩 걷어내며 물건을 찾아보세요</div>
       </div>
       <div class="chip-row" id="skTierRow" style="justify-content:center;margin-top:16px;"></div>
     `;
@@ -25711,7 +25766,9 @@ function startCatchGame() {
 
   function begin(t) {
     tier = t;
-    taps = 0; found = 0; marks = []; over = false;
+    taps = 0; found = 0; over = false;
+    revealed = Array.from({ length: SEEK_ROWS }, () => Array(SEEK_COLS).fill(false));
+    coverEls = Array.from({ length: SEEK_ROWS }, () => Array(SEEK_COLS).fill(null));
     // 물건을 겹치지 않게 숨겨요
     const pool = SEEK_ITEMS.slice().sort(() => Math.random() - 0.5).slice(0, t.find);
     hidden = [];
@@ -25727,7 +25784,7 @@ function startCatchGame() {
       }
     });
     buildClutter();
-    addLog(t.note);
+    addLog('"어... 어어, 잠깐만요!" 루미가 헝겊을 확 던져 책상을 덮어버렸어요.');
     renderStage();
   }
 
@@ -25756,20 +25813,25 @@ function startCatchGame() {
   function renderStage() {
     panel.style.cssText = 'position:absolute;inset:0;padding:0;display:block;';
     panel.innerHTML = `
-      <div id="skScene" style="position:absolute;top:56px;left:0;right:0;bottom:118px;overflow:hidden;"></div>
+      <div id="skScene" style="position:absolute;top:56px;left:0;right:0;bottom:118px;overflow:hidden;">
+        <div id="skBg" style="position:absolute;inset:0;"></div>
+        <div id="skFound" style="position:absolute;inset:0;pointer-events:none;"></div>
+        <div id="skCover" style="position:absolute;inset:0;display:grid;
+             grid-template-columns:repeat(${SEEK_COLS},1fr);grid-template-rows:repeat(${SEEK_ROWS},1fr);"></div>
+      </div>
       <div id="skList" style="position:absolute;left:0;right:0;bottom:0;height:118px;
            background:rgba(20,12,28,.55);padding:8px 10px;">
         <div style="font-size:12px;font-weight:800;color:#F7E8F0;opacity:.85;margin-bottom:4px;">찾아야 할 물건들</div>
         <div id="skRow" style="display:flex;gap:10px;justify-content:center;align-items:flex-end;"></div>
       </div>
     `;
-    drawScene(); drawList();
+    drawBg(); drawFound(); drawCover(); drawList(); updateHud();
   }
 
-  function drawScene() {
-    const el = document.getElementById('skScene');
+  // 바닥 그림 — 방 배경 + 잡동사니. 헝겊 아래 늘 그대로 깔려 있어요.
+  function drawBg() {
+    const el = document.getElementById('skBg');
     if (!el) return;
-    // 연구실 풍경 — 물건이 이 안에 묻혀 있어요
     el.innerHTML = `
       <div style="position:absolute;inset:0;background:
            linear-gradient(180deg,#3E3550 0%,#54455F 52%,#6A5352 53%,#7A6055 100%);"></div>
@@ -25779,32 +25841,62 @@ function startCatchGame() {
           <svg viewBox="0 0 32 32" style="width:100%;"><use href="#ico-g-${c.ico}"/></svg></div>`).join('')}
       <div style="position:absolute;left:0;right:0;bottom:0;height:24%;
            background:linear-gradient(180deg,rgba(0,0,0,0),rgba(20,10,30,.4));"></div>
+    `;
+  }
 
-      <!-- 찾은 물건은 제자리에 드러나요 -->
-      ${hidden.filter(h => h.found).map(h => `
-        <div class="sk-found" style="position:absolute;left:${(h.col + h.size / 2) / SEEK_COLS * 100}%;
+  // 찾아낸 물건은 반짝이며 제자리에 드러나고,
+  // 아직 다 찾지 못한 물건은 걷어낸 칸만큼만 그림 조각이 살짝 비쳐요.
+  function drawFound() {
+    const el = document.getElementById('skFound');
+    if (!el) return;
+    let html = '';
+    hidden.forEach(h => {
+      if (h.found) {
+        html += `<div class="sk-found" style="position:absolute;left:${(h.col + h.size / 2) / SEEK_COLS * 100}%;
              top:${(h.row + h.size / 2) / SEEK_ROWS * 100}%;transform:translate(-50%,-50%);
              width:${h.size * 22}px;filter:drop-shadow(0 0 6px #FFE08A);">
-          <svg viewBox="0 0 32 32" style="width:100%;"><use href="#ico-g-${h.item.ico}"/></svg></div>`).join('')}
+          <svg viewBox="0 0 32 32" style="width:100%;"><use href="#ico-g-${h.item.ico}"/></svg></div>`;
+        return;
+      }
+      // 아직 못 찾은 물건 — 이미 걷어낸 칸 위치에만 아이콘의 해당 부분을 살짝 보여줘요.
+      const boxLeft = h.col / SEEK_COLS * 100, boxTop = h.row / SEEK_ROWS * 100;
+      const boxW = h.size / SEEK_COLS * 100, boxH = h.size / SEEK_ROWS * 100;
+      for (let rr = h.row; rr < h.row + h.size; rr++) {
+        for (let cc = h.col; cc < h.col + h.size; cc++) {
+          if (!revealed[rr] || !revealed[rr][cc]) continue;
+          const clipL = (cc - h.col) / h.size * 100;
+          const clipT = (rr - h.row) / h.size * 100;
+          const clipR = 100 - clipL - (100 / h.size);
+          const clipB = 100 - clipT - (100 / h.size);
+          html += `<div style="position:absolute;left:${boxLeft}%;top:${boxTop}%;width:${boxW}%;height:${boxH}%;
+               clip-path:inset(${clipT}% ${clipR}% ${clipB}% ${clipL}%);opacity:.85;">
+              <svg viewBox="0 0 32 32" style="width:100%;height:100%;"><use href="#ico-g-${h.item.ico}"/></svg></div>`;
+        }
+      }
+    });
+    el.innerHTML = html;
+  }
 
-      <!-- 헛짚은 자리 -->
-      ${marks.map((m, i) => `<div class="${i === marks.length - 1 ? 'sk-ripple' : ''}"
-        style="position:absolute;left:${(m.c + .5) / SEEK_COLS * 100}%;
-        top:${(m.r + .5) / SEEK_ROWS * 100}%;transform:translate(-50%,-50%);
-        width:${i === marks.length - 1 ? 30 : 14}px;height:${i === marks.length - 1 ? 30 : 14}px;
-        border-radius:50%;border:2px solid rgba(255,255,255,.45);pointer-events:none;"></div>`).join('')}
-
-      <!-- 클릭 격자 (보이지 않아요) -->
-      <div id="skGrid" style="position:absolute;inset:0;display:grid;
-           grid-template-columns:repeat(${SEEK_COLS},1fr);grid-template-rows:repeat(${SEEK_ROWS},1fr);"></div>
-    `;
-    const grid = document.getElementById('skGrid');
-    for (let r = 0; r < SEEK_ROWS; r++) for (let c = 0; c < SEEK_COLS; c++) {
-      const cell = document.createElement('button');
-      cell.style.cssText = 'background:none;border:none;padding:0;cursor:pointer;';
-      cell.onclick = () => tap(c, r);
-      grid.appendChild(cell);
+  // 헝겊 조각들 — 하나로 이어진 그림처럼 보이게, 칸마다 배경 위치만 살짝씩 옮겨요.
+  function drawCover() {
+    const grid = document.getElementById('skCover');
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (let r = 0; r < SEEK_ROWS; r++) {
+      for (let c = 0; c < SEEK_COLS; c++) {
+        const cell = document.createElement('button');
+        cell.className = 'sk-cell' + (revealed[r][c] ? ' sk-cell-open' : '');
+        cell.style.backgroundSize = `${SEEK_COLS * 100}% ${SEEK_ROWS * 100}%`;
+        cell.style.backgroundPosition =
+          `${(c / (SEEK_COLS - 1)) * 100}% ${(r / (SEEK_ROWS - 1)) * 100}%`;
+        if (!revealed[r][c]) cell.onclick = () => tap(c, r);
+        grid.appendChild(cell);
+        coverEls[r][c] = cell;
+      }
     }
+  }
+
+  function updateHud() {
     mgHud(`<div class="mh-box">남은 횟수 <span style="color:#FFE08A;">${tier.taps - taps}</span></div>`
         + `<div class="mh-box">찾은 개수 <span style="color:#FFE08A;">${found}</span></div>`);
   }
@@ -25822,26 +25914,49 @@ function startCatchGame() {
       </div>`).join('');
   }
 
+  // 조각 하나를 헝겊에서 걷어내요 (다시 못 덮어요)
+  function openCell(c, r) {
+    if (revealed[r][c]) return;
+    revealed[r][c] = true;
+    const el = coverEls[r] && coverEls[r][c];
+    if (el) { el.onclick = null; el.classList.add('sk-cell-open'); }
+  }
+
   function tap(c, r) {
-    if (over) return;
+    if (over || revealed[r][c]) return;
+    taps += 1;
+    // 누른 칸 하나만 헝겊이 걷혀요. 물건 전체가 한 번에 드러나지 않아요.
+    openCell(c, r);
     const hit = hidden.find(h => !h.found &&
       c >= h.col && c < h.col + h.size && r >= h.row && r < h.row + h.size);
-    taps += 1;
     if (hit) {
-      hit.found = true;
-      found += 1;
-      sfxCoin();
-      mgSpark({});
-      mgToast(LUMI_FOUND[Math.floor(Math.random() * LUMI_FOUND.length)], '#BFF0C8');
-      drawScene(); drawList();
-      if (found >= tier.find) { finish('물건을 다 찾았어요!'); return; }
+      let allOpen = true;
+      outer: for (let rr = hit.row; rr < hit.row + hit.size; rr++) {
+        for (let cc = hit.col; cc < hit.col + hit.size; cc++) {
+          if (!revealed[rr][cc]) { allOpen = false; break outer; }
+        }
+      }
+      if (allOpen) {
+        // 물건이 차지한 칸을 전부 걷어냈을 때만 진짜로 찾은 거예요.
+        hit.found = true;
+        found += 1;
+        sfxCoin();
+        mgSpark({});
+        mgToast(LUMI_FOUND[Math.floor(Math.random() * LUMI_FOUND.length)], '#BFF0C8');
+        drawList();
+        if (found >= tier.find) { drawFound(); finish('물건을 다 찾았어요!'); return; }
+      } else {
+        // 정답 칸이긴 한데 아직 다 걷어내지 못했어요 — 조금 더 눌러봐야 해요.
+        sfxClick();
+        mgToast(LUMI_PARTIAL[Math.floor(Math.random() * LUMI_PARTIAL.length)], '#FFE08A');
+      }
+      drawFound();
     } else {
-      marks.push({ c, r });
       sfxWrong();
       mgMiss('');
       mgToast(LUMI_MISS[Math.floor(Math.random() * LUMI_MISS.length)], '#E8D8F0');
-      drawScene();
     }
+    updateHud();
     if (taps >= tier.taps && found < tier.find) { finish('더 찾아볼 횟수가 없어요.'); return; }
     setTimeout(() => { if (!over && !mgAborted) mgToast(''); }, 900);
   }
